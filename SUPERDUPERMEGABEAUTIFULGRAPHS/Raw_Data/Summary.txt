@@ -1,0 +1,209 @@
+##################### YEEYEE AHH CHATGPT SLOP, I SLEPT LIKE 5 HOURS TOO TIRED TO TAKE #########
+#################### A LOOK AT THIS SHIT RN ##################################################
+
+################## Taking a look at this sh1t rn ###############################################
+
+#################  LOOK AT THE END OF FILEEEEEEEEE pls #########################################
+
+# |     
+# |
+# |
+# |                               HERE a COOKIE
+# |                               now go down
+# |
+# |
+# v
+
+
+
+###  **1. Histograms (Frequency Distributions)**
+
+These plots show how frequently values occur for each numeric attribute.
+
+* **Peso (Weight):** The histogram shows a strong right skew — many low values and few very large ones. This suggests most entries cluster at low weights with a few extreme outliers.
+* **Altura (Height):** The values are distributed more widely, with a plateau-like region between roughly 50 and 150. This indicates multiple common value ranges.
+* **IMC (BMI):** Most data points are concentrated at very low values, with a few extremely high ones pushing the axis scale far to the right.
+* **PA Sistólica (Systolic BP)** and **PA Diastólica (Diastolic BP):** Both show that most observations lie in a narrow, realistic range, but there are rare extreme cases extending up to very high values (e.g., near 1000 for systolic).
+
+Overall, histograms make the **data concentration and outliers** immediately visible.
+
+---
+
+### **2. Density Plots (Probability Distributions)**
+
+These show smoothed versions of the histograms — continuous curves estimating the **probability density** of the data.
+
+* The sharp peaks you saw (especially in IMC and blood pressure) indicate that most values fall within a very tight interval, while the long flat tails confirm the presence of extreme outliers stretching the x-axis.
+* **Altura** shows multiple humps — suggesting multimodality (potentially different subgroups or measurement ranges).
+* **Peso** and **PA Diastólica** display narrow peaks near their mean values, meaning low variability among most observations.
+
+Density plots help visualize the **shape and smoothness** of distributions — even when histograms look blocky.
+
+---
+
+### **3. Spread Measures (Descriptive Statistics Table)**
+
+This table summarizes numerical variability and central tendency for each attribute:
+
+| Attribute         | Interpretation                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Peso**          | Mean ≈ 21.2, high std (18.1), with a range of 197 → indicates considerable spread and likely outliers (since weight can’t be negative).   |
+| **Altura**        | Mean ≈ 83.9, wide std (56.6), range 198 → data vary greatly; possibly includes missing or coded values (e.g., 0).                         |
+| **IMC**           | Mean ≈ 17.8, std ≈ 12.1, but max = 848 → a few extreme values dominate the range; most entries are likely within normal human BMI limits. |
+| **PA Sistólica**  | Mean ≈ 101, std ≈ 15.5, but max = 990 → typical blood pressure values clustered near 100 with rare data-entry spikes.                     |
+| **PA Diastólica** | Mean ≈ 62, std ≈ 8.9, reasonable range up to 120, indicating normal dispersion.                                                           |
+
+Together, these stats quantify **central tendency (mean, median)** and **dispersion (std, range)** — matching what you visually observed in the plots.
+
+---
+
+Sure — here’s the same answer, cleaned of emoticons and formatting symbols:
+
+---
+
+## Main Changes Needed in the Raw Data
+
+### 1. Handle Clearly Invalid or Impossible Values
+
+* Negative “Peso” (Weight):
+  You have weights as low as –40, which is impossible.
+  → Replace negative values with `NaN` or remove those records entirely.
+
+* Zero or Unrealistic “Altura” (Height):
+  A height of 0 is physically impossible and skews IMC (BMI) calculation.
+  → Treat zeros as missing (`NaN`) and remove or impute later.
+
+* Extremely High “IMC” (848):
+  BMI above 100 is biologically implausible.
+  → Cap these at a reasonable human maximum (for example, 60) or remove them as outliers.
+
+* Very High “PA Sistólica” (990) and “PA Diastólica” (120+):
+  Normal human systolic values rarely exceed 250 mmHg.
+  → Anything above about 300 should be flagged or removed.
+
+---
+
+### 2. Check for Unit Inconsistencies
+
+The range of “Altura” (0–198) and “Peso” (–40 to 157) suggests mixed measurement units (for example, cm vs. m, kg vs. g).
+→ Verify that all measurements use the same units and convert if necessary.
+Example: if some heights are in meters (1.80) and others in centimeters (180), this will distort both “Altura” and “IMC”.
+
+---
+
+### 3. Inspect and Correct Derived Columns
+
+IMC (BMI) = Peso / (Altura²). If this was calculated automatically, invalid Peso/Altura values propagate to IMC.
+→ Recalculate IMC only after cleaning “Peso” and “Altura”.
+This will remove unnatural spikes and compress the range to realistic values (approximately 10–60).
+
+---
+
+### 4. Remove or Impute Missing or Extreme Values
+
+Use quantile thresholds or z-scores to identify extreme outliers:
+
+```python
+df = df[(df['Peso'].between(df['Peso'].quantile(0.01), df['Peso'].quantile(0.99)))]
+```
+
+→ This trims extreme 1% tails while keeping realistic data intact.
+Alternatively, set them to `NaN` and impute later using median or regression models.
+
+---
+
+### 5. Re-examine Data Collection or Entry Process
+
+The large spread and unrealistic values suggest manual entry or import errors.
+→ Implement validation at data collection (for example, reject negative or zero height, implausible pressure values).
+
+---
+
+### 6. Verify Data Type Consistency
+
+Ensure all numeric columns are actually numeric (`float` or `int`) — sometimes Excel imports numbers as strings with commas or spaces.
+→ Run:
+
+```python
+df = df.apply(pd.to_numeric, errors='coerce')
+```
+
+to coerce bad entries into `NaN`.
+
+---
+
+### Summary of Priority Fixes
+
+| Priority | Column        | Problem                     | Action                                     |
+| -------- | ------------- | --------------------------- | ------------------------------------------ |
+| High     | Peso          | Negative values             | Remove or replace with NaN                 |
+| High     | Altura        | Zeros or inconsistent units | Verify and correct                         |
+| High     | IMC           | Unrealistic maximum (848)   | Recalculate after cleaning Peso and Altura |
+| Medium   | PA Sistólica  | Outliers (990)              | Cap or remove                              |
+| Low      | PA Diastólica | Slight outliers             | Review upper limits                        |
+| All      | Data types    | Ensure numeric consistency  | Coerce or convert                          |
+
+---
+
+
+
+#################### FUCK OPENAI ################################
+#################### MFERS WOULD NOT LET ME UPLOAD ANOTHER FILE
+# So, what you need to do? Simple, very simple future me. Open the subjects moodle page and get
+# the assignment instruction file. The part we finished is up to the proposed solutions.
+# Run it throught CHATGPT and ask it to give you answer.
+# ERIS SUKI SUKI CHUUU 
+#sry...
+
+
+####### IM BACK ########
+###### STILL LOVE ERIS CHUU CHUU 
+##### So, as I talked with Ines, I should not make up values and only remove ones that are medically impossible.
+##### Also, remove data that has the age atribute x> 19 or x < 2, as a side note if out of imc, peso and altura
+##### a given entry has only one of them missing I should recalculate the value based on the other two attributes
+
+
+#############################################################################################################
+
+50 < PAS < 250
+30 < PAD < 150
+
+60 < ALTURA < 220
+
+8 < PESO < 100
+
+10 < IMC < 60
+
+2 < IDADE < 19
+
+#################################################################
+
+# So, update the graphs based on the parameters above, you will have to change plotsaux3 logic and update
+# the xls table in order to fit the new restraints
+# Eris suki suki chu chu wink
+
+The main difference between an abstract and an interface in Java would be that an Interface has to have
+its methods declared and certainly not innitialized, while an abstract can have its methods, or variables
+for that matter, properly innitialized
+
+
+
+
+##First, but no least, Eris suki suki chu chu,
+## Use Shap analysis 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
