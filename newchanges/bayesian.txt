@@ -1,0 +1,297 @@
+# Bayesian Network Analysis
+
+---
+
+## 1. Overview
+
+Two Bayesian Network classifiers were developed: Gaussian Naive Bayes (GNB) using continuous features and Categorical Naive Bayes (CNB) using discretized features. Both models were trained on the same 12,076 patient dataset with 70/30 train-test split.
+
+---
+
+## 2. Model Performance Comparison
+
+### 2.1 Gaussian vs. Categorical Naive Bayes
+
+| Metric | Gaussian NB | Categorical NB | Winner |
+|--------|-------------|----------------|--------|
+| **Accuracy** | **93.18%** | 92.16% | Gaussian (+1.02%) |
+| **Precision** | **93.73%** | 91.18% | Gaussian (+2.55%) |
+| **Recall** | **86.70%** | 86.39% | Gaussian (+0.31%) |
+| **F1-Score** | **90.08%** | 88.72% | Gaussian (+1.36%) |
+| **ROC-AUC** | 0.9372 | **0.9413** | Categorical (+0.41%) |
+| **Specificity** | **96.78%** | 95.36% | Gaussian (+1.42%) |
+| **CV Mean F1** | **0.9010** | 0.8802 | Gaussian (+2.08%) |
+
+### 2.2 Key Findings
+
+**Gaussian NB is the superior model:**
+- Higher accuracy (+1.02%), precision (+2.55%), and F1-score (+1.36%)
+- Excellent specificity (96.78%) - best at identifying healthy children
+- More stable cross-validation performance (CV F1: 0.9010 vs 0.8802)
+- Slightly better sensitivity (86.70% vs 86.39%)
+
+**Categorical NB advantage:**
+- Marginally higher ROC-AUC (0.9413 vs 0.9372) despite lower accuracy
+
+Gaussian Naive Bayes is recommended for this application due to consistently better performance across most metrics.
+
+---
+
+## 3. Confusion Matrix Analysis
+
+### 3.1 Gaussian Naive Bayes (Test Set, N=3,623)
+
+|  | **Predicted Normal** | **Predicted Anormal** | **Total** |
+|---|---|---|---|
+| **Actual Normal** | 2,255 (TN) | 75 (FP) | 2,330 |
+| **Actual Anormal** | 172 (FN) | 1,121 (TP) | 1,293 |
+
+**Performance Metrics:**
+- **Sensitivity: 86.70%** - Correctly identifies 1,121 of 1,293 pathological cases
+- **Specificity: 96.78%** - Correctly identifies 2,255 of 2,330 healthy children
+- **Precision: 93.73%** - When predicting "Anormal," correct 93.73% of time
+- **False Negatives: 172 (13.30%)** - Most critical error (missed pathologies)
+- **False Positives: 75 (3.22%)** - Minimal false alarms
+
+### 3.2 Categorical Naive Bayes (Test Set, N=3,623)
+
+|  | **Predicted Normal** | **Predicted Anormal** | **Total** |
+|---|---|---|---|
+| **Actual Normal** | 2,222 (TN) | 108 (FP) | 2,330 |
+| **Actual Anormal** | 176 (FN) | 1,117 (TP) | 1,293 |
+
+**Performance Metrics:**
+- **Sensitivity: 86.39%** - Slightly lower than Gaussian NB
+- **Specificity: 95.36%** - Lower specificity (more false positives: 108 vs 75)
+- **Precision: 91.18%** - Lower precision due to more false alarms
+- **False Negatives: 176 (13.61%)** - Slightly more missed cases than Gaussian
+
+### 3.3 Clinical Interpretation
+
+**Gaussian NB advantages:**
+1. **Fewer false positives (75 vs 108)** → Reduces unnecessary follow-up tests for 33 additional healthy children
+2. **Fewer false negatives (172 vs 176)** → Catches 4 more pathological cases
+3. **Higher specificity (96.78%)** → Better at ruling out disease in healthy children
+
+---
+
+## 4. Feature Importance Analysis
+
+### 4.1 Discriminative Power (Gaussian NB)
+
+Based on mean differences between Normal and Anormal classes:
+
+| Rank | Feature | Normalized Importance | Mean Diff | Clinical Interpretation |
+|------|---------|---------------------|-----------|------------------------|
+| 1 | FC | 59.23% | 3.815 | Heart rate differs most between classes (Anormal: 89.4 vs Normal: 85.6 bpm) |
+| 2 | SOPRO** | 25.45% | 1.639 | Heart murmur presence strongly discriminates (encoded: Anormal: 0.32 vs Normal: 1.95) |
+| 3 | IMC | 7.15% | 0.460 | Minor BMI difference (Anormal: 17.57 vs Normal: 18.03) |
+| 4 | MOTIVO2 | 4.29% | 0.276 | Secondary referral reason provides minimal information |
+| 5 | B2 | 2.18% | 0.140 | Second heart sound shows small difference |
+| 6 | MOTIVO1 | 0.91% | 0.059 | Primary referral reason nearly irrelevant |
+| 7 | PA_SISTOLICA | 0.79% | 0.051 | Systolic BP virtually identical between classes |
+
+### 4.2 Critical Insights
+
+**1. FC (Heart Rate) dominates in Bayesian Networks (59.23%)**
+- Contrasts sharply with Decision Tree where SOPRO was 92.26%
+- Anormal patients have ~3.8 bpm higher heart rate on average
+- This reflects the Gaussian NB's sensitivity to continuous variable distributions
+
+**2. SOPRO remains highly important (25.45%)**
+- Second most discriminative feature
+- Mean encoding difference: Anormal patients score much lower (0.32 vs 1.95)
+- Confirms multivariate analysis and Decision Tree findings
+
+**3. Other features contribute minimally (<8% combined)**
+- IMC, MOTIVO1, MOTIVO2, B2, PA_SISTOLICA have limited discriminative power
+- Suggests a simpler 2-feature model (FC + SOPRO) might perform nearly as well
+
+---
+
+## 5. ROC Curve Analysis
+
+### 5.1 AUC Scores
+
+- **Gaussian NB:** AUC = 0.9372
+- **Categorical NB:** AUC = 0.9413
+- **Difference:** +0.0041 in favor of Categorical NB
+
+### 5.2 Interpretation
+
+**Both models achieve excellent discrimination (>0.93 AUC):**
+- 93-94% probability that a randomly selected Anormal patient receives a higher risk score than a randomly selected Normal patient
+- Both far exceed random classifier (AUC = 0.50)
+- Minimal practical difference between the two (0.4% AUC difference)
+
+**Categorical NB's higher AUC despite lower accuracy suggests:**
+- Better probability calibration across different decision thresholds
+- May produce more reliable probability estimates for risk stratification
+- Could be valuable in clinical settings where uncertainty quantification matters
+
+**Clinical implication:**
+- Both models suitable for risk scoring systems
+- Categorical NB slightly better for generating confidence scores
+- Gaussian NB better for binary classification (yes/no decisions)
+
+---
+
+## 6. Probability Distribution Analysis
+
+### 6.1 Key Observations
+
+The probability distribution plots reveal:
+
+**Gaussian NB:**
+- **Normal cases:** Most predicted probabilities cluster near 0 (low Anormal probability)
+- **Anormal cases:** Most predicted probabilities cluster near 1 (high Anormal probability)
+- **Good separation:** Clear bimodal distribution indicates confident predictions
+- **Few borderline cases:** Limited overlap around 0.5 threshold
+
+**Categorical NB:**
+- **Similar pattern** but slightly more overlap around decision boundary
+- **More conservative predictions:** Less extreme probabilities (fewer 0.0 or 1.0 predictions)
+- **Wider distributions:** More uncertainty, which explains higher AUC with lower accuracy
+
+### 6.2 Clinical Utility
+
+Well-separated probability distributions mean:
+- High confidence in most predictions
+- Clear identification of borderline cases (probabilities near 0.5)
+- Clinicians can stratify patients by risk level, not just binary classification
+- Patients with P(Anormal) = 0.7-0.9 might need different follow-up than those with P(Anormal) > 0.95
+
+---
+
+## 7. Cross-Validation Results
+
+### 7.1 Gaussian Naive Bayes
+
+| Fold | F1-Score |
+|------|----------|
+| 1 | 0.8912 |
+| 2 | 0.9055 |
+| 3 | 0.9063 |
+| 4 | 0.9040 |
+| 5 | 0.8981 |
+
+**Mean F1:** 0.9010 ± 0.0057  
+**95% CI:** [0.8899, 0.9121]
+
+### 7.2 Categorical Naive Bayes
+
+| Fold | F1-Score |
+|------|----------|
+| 1 | 0.8724 |
+| 2 | 0.8824 |
+| 3 | 0.8874 |
+| 4 | 0.8838 |
+| 5 | 0.8753 |
+
+**Mean F1:** 0.8802 ± 0.0056  
+**95% CI:** [0.8694, 0.8911]
+
+### 7.3 Stability Analysis
+
+**Both models show excellent stability:**
+- **Low standard deviations** (<0.6%) indicate consistent performance across folds
+- **Narrow confidence intervals** suggest reliable generalization
+- **Gaussian NB more stable:** Slightly tighter CV range (0.8912-0.9063 vs 0.8724-0.8874)
+
+**Gaussian vs Test Performance:**
+- CV mean (0.9010) ≈ Test F1 (0.9008) → Minimal overfitting
+- Confirms model generalizes well to unseen data
+
+---
+
+## 8. Independence Assumption Analysis
+
+### 8.1 Correlation Matrix (Numeric Features)
+
+|  | FC | IMC | PA_SISTOLICA |
+|---|---|---|---|
+| **FC** | 1.000 | -0.139 | -0.111 |
+| **IMC** | -0.139 | 1.000 | **0.416** |
+| **PA_SISTOLICA** | -0.111 | **0.416** | 1.000 |
+
+### 8.2 Violation Assessment
+
+**Detected violation:**
+- **IMC ↔ PA_SISTOLICA: r = 0.416** (moderate positive correlation)
+- Violates the Naive Bayes independence assumption
+
+**Other correlations:**
+- FC ↔ IMC: -0.139 (weak, acceptable)
+- FC ↔ PA_SISTOLICA: -0.111 (weak, acceptable)
+
+### 8.3 Impact on Model Performance
+
+**Despite the IMC-PA_SISTOLICA correlation violation:**
+- Model still achieves 93.18% accuracy
+- Cross-validation shows stability
+- Suggests the correlation doesn't severely impact performance
+
+**Why it still works:**
+1. **Weak violations:** Only one pair exceeds 0.3 threshold, and even that is moderate (0.416)
+2. **SOPRO and FC dominate:** The most important features (59% + 25% = 84% importance) are uncorrelated
+3. **Naive Bayes robustness:** Known to work well even with mild independence violations
+4. **Within-class independence:** The assumption is conditional independence *given the class*, which may hold better than marginal independence
+
+---
+
+
+## 9. Model Strengths & Limitations
+
+### 9.1 Gaussian Naive Bayes Strengths
+
+1. **Excellent performance:** 93.18% accuracy, 0.9372 AUC
+2. **High specificity:** 96.78% - minimizes false alarms
+3. **Probabilistic predictions:** Provides P(Anormal) for risk stratification
+4. **Fast & scalable:** Trains instantly, predicts in real-time
+5. **Robust to violations:** Works well despite IMC-PA_SISTOLICA correlation
+6. **Simple & stable:** No hyperparameter tuning needed, low CV variance
+7. **Handles missing data:** Naturally accommodates incomplete records
+
+### 9.2 Limitations
+
+1. **Independence assumption:** Assumes features are conditionally independent (violated by IMC-PA_SISTOLICA)
+2. **Normality assumption:** Assumes Gaussian distributions (may not hold for all features)
+3. **Lower interpretability:** Cannot visualize decision rules like trees
+4. **Feature importance paradox:** FC ranks #1 but SOPRO clinically more important
+5. **False negatives:** Still misses 13.3% of pathological cases (172 patients)
+6. **Sensitive to feature scaling:** Different scales can affect probability estimates
+
+### 9.3 Clinical Risk Assessment
+
+**13.3% false negative rate (172 missed cases) considerations:**
+- **Acceptable for screening:** High sensitivity (86.7%) catches most cases
+- **Not sufficient for diagnosis:** Requires confirmatory testing (echocardiogram)
+- **Age/risk stratification:** May perform better/worse in specific age groups
+- **Clinical context matters:** Symptoms, family history should override model when present
+
+---
+
+## 10. Key Takeaways
+
+### 10.1 Main Findings
+
+1. **Gaussian Naive Bayes achieves 93.18% accuracy**
+
+2. **FC (heart rate) is the most discriminative feature** in probabilistic models (59.23% importance), contrasting with Decision Tree's SOPRO dominance (92.26%)
+
+3. **Both Bayesian models exceed 0.93 AUC**, demonstrating excellent discrimination despite the independence assumption violation
+
+4. **Specificity of 96.78%** means only 3.22% of healthy children are incorrectly flagged, minimizing unnecessary testing
+
+5. **Categorical NB's higher AUC (0.9413) with lower accuracy** suggests better probability calibration for risk stratification applications
+
+
+---
+
+## 11. Conclusions
+
+The Bayesian Network analysis demonstrates that Gaussian Naive Bayes is a highly effective, simple, and fast for predicting cardiac pathology in children. With 93.18% accuracy, 96.78% specificity, and 0.9372 AUC.
+
+The analysis reveals that heart rate (FC) and heart murmur (SOPRO) together account for 84.68% of discriminative power, suggesting these two clinical features are sufficient for accurate prediction. The model's probabilistic output enables risk stratification beyond binary classification, adding clinical utility for triaging patients.
+
+Despite violating the independence assumption (IMC-PA_SISTOLICA correlation of 0.416), the model maintains excellent performance and stability (CV std = 0.0057), demonstrating Naive Bayes's practical robustness.

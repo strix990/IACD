@@ -1,0 +1,223 @@
+# Decision Tree Analysis
+
+---
+
+## 1. Overview
+
+A Decision Tree classifier was developed to predict cardiac pathology (Normal vs. Anormal) in children using 7 features selected from multivariate analysis. The dataset of 12,076 patients (64.3% Normal, 35.7% Anormal) was split into training (70%) and testing (30%) sets.
+
+---
+
+## 2. Model Development Process
+
+### 2.1 Feature Set
+Based on the other analysises findings, seven features were selected:
+- **SOPRO** (Heart murmur) - Categorical
+- **B2** (Second heart sound) - Categorical  
+- **FC** (Heart rate) - Numeric
+- **IMC** (Body Mass Index) - Numeric
+- **PA_SISTOLICA** (Systolic BP) - Numeric
+- **MOTIVO1** (Primary referral reason) - Categorical
+- **MOTIVO2** (Secondary referral reason) - Categorical
+
+### 2.2 Data Preprocessing
+- Missing values imputed: FC, IMC, PA_SISTOLICA (median); categorical features ('Missing' category)
+- Categorical variables label-encoded (3 SOPRO categories, 6 MOTIVO1, 10 MOTIVO2, 3 B2)
+- Class imbalance addressed through balanced class weights
+
+### 2.3 Hyperparameter Optimization
+Grid search with 5-fold cross-validation tested 384 parameter combinations:
+
+**Optimal parameters:**
+- **Criterion:** Entropy (information gain)
+- **Max depth:** 5 levels
+- **Min samples split:** 20
+- **Min samples leaf:** 5
+- **Class weight:** Balanced
+
+---
+
+## 3. Model Performance Comparison
+
+### 3.1 Baseline vs. Optimized Model
+
+| Metric | Baseline | Optimized | Improvement |
+|--------|----------|-----------|-------------|
+| **Accuracy** | 89.59% | **92.93%** | +3.34% |
+| **Precision** | 86.52% | **92.89%** | +6.37% |
+| **Recall (Sensitivity)** | 83.91% | **86.85%** | +2.94% |
+| **F1-Score** | 85.20% | **89.77%** | +4.57% |
+| **ROC-AUC** | 0.889 | **0.935** | +0.046 |
+| **Tree Depth** | 25 | **5** | -80% |
+| **Num Leaves** | 1193 | **26** | -97.8% |
+
+### 3.2 Key Improvements
+
+1. **Accuracy increased 3.3%** while dramatically reducing model complexity
+2. **Precision improved 6.4%** - fewer false alarms (86 vs. 169 false positives)
+3. **Tree complexity reduced 97.8%** (26 leaves vs. 1193) - prevents overfitting
+4. **ROC-AUC of 0.935** indicates excellent discrimination ability
+
+---
+
+## 4. Feature Importance Analysis
+
+### 4.1 Importance Ranking
+
+| Rank | Feature | Importance | Interpretation |
+|------|---------|------------|----------------|
+| 1 | **SOPRO** | **92.26%** | Dominates prediction - heart murmur is the decisive factor |
+| 2 | B2 | 2.97% | Second heart sound provides supplementary information |
+| 3 | FC | 2.55% | Heart rate contributes modestly |
+| 4 | IMC | 1.00% | BMI has minimal impact |
+| 5 | MOTIVO1 | 0.78% | Primary referral reason nearly negligible |
+| 6 | MOTIVO2 | 0.23% | Secondary referral reason almost irrelevant |
+| 7 | PA_SISTOLICA | 0.21% | Systolic BP provides minimal information |
+
+### 4.2 Critical Finding
+
+**SOPRO accounts for 92.26% of predictive power** - The Decision Tree essentially uses SOPRO as the primary decision criterion, with other features providing minor refinements.
+
+A simple rule-based system using SOPRO alone might achieve similar performance to this 7-feature model.
+
+---
+
+## 5. Decision Tree Structure Analysis
+
+### 5.1 Root Node (Level 1)
+**First split: SOPRO ≤ 0.5**
+- **True branch (SOPRO = Alterado/Abnormal):** 2,662 samples → Majority Anormal
+- **False branch (SOPRO = Normal/Missing):** 5,791 samples → Majority Normal
+
+The tree immediately separates patients based on heart murmur presence, achieving substantial class separation at the root.
+
+### 5.2 Level 2 - Left Branch (Abnormal Murmur)
+**Second split: FC ≤ 80.5**
+- High heart rate (FC > 80.5) + abnormal murmur → Strong Anormal prediction
+- Lower heart rate → Further evaluation with FC and MOTIVO2
+
+Abnormal murmur combined with elevated heart rate is a strong pathology indicator.
+
+### 5.3 Level 2 - Right Branch (Normal Murmur)
+**Second split: B2 ≤ 0.5**
+- **B2 = Alterada (Abnormal second heart sound):** 75 samples → Anormal despite normal murmur
+- **B2 = Normal/Missing:** 5,716 samples → Predominantly Normal
+
+Even without murmur, abnormal second heart sound suggests pathology.
+
+### 5.4 Lower Levels (3-5)
+Further refinements use:
+- **FC thresholds** (73.0, 79.0, 87.0, 95.5) - Heart rate boundaries
+- **IMC threshold** (27.5) - Separates higher BMI cases
+- **MOTIVO1/MOTIVO2** - Captures referral context for edge cases
+- **PA_SISTOLICA** - Minor role in final leaves
+
+---
+
+## 6. Confusion Matrix Analysis
+
+### 6.1 Optimized Model (Test Set, N=3,623)
+
+|  | **Predicted Normal** | **Predicted Anormal** | **Total** |
+|---|---|---|---|
+| **Actual Normal** | 2,244 (TN) | 86 (FP) | 2,330 |
+| **Actual Anormal** | 170 (FN) | 1,123 (TP) | 1,293 |
+
+### 6.2 Performance Metrics
+
+**Sensitivity (Recall) = 86.85%**
+- **TP/(TP+FN) = 1,123/1,293**
+- Correctly identifies 86.85% of children WITH cardiac pathology
+- **Clinical significance:** High sensitivity is crucial in medical screening to avoid missing diseased patients
+
+**Specificity = 96.31%**
+- **TN/(TN+FP) = 2,244/2,330**
+- Correctly identifies 96.31% of children WITHOUT cardiac pathology
+- **Clinical significance:** High specificity minimizes unnecessary follow-up procedures for healthy children
+
+**Precision (Positive Predictive Value) = 92.89%**
+- **TP/(TP+FP) = 1,123/1,209**
+- When model predicts "Anormal," it's correct 92.89% of time
+- Reduces false alarms significantly (86 false positives)
+
+### 6.3 Error Analysis
+
+**False Negatives (170):** 
+- Model missed 13.15% of pathological cases
+- Most critical error type in medical context
+- Likely represents subtle pathologies where SOPRO is normal/borderline
+
+**False Positives (86):**
+- Model over-predicted 3.69% of normal cases  
+- Less critical but causes unnecessary anxiety/testing
+- Represents 49% reduction from baseline (169 → 86)
+
+---
+
+## 7. ROC Curve Analysis
+
+### 7.1 AUC Scores
+- **Baseline Model:** AUC = 0.889
+- **Optimized Model:** AUC = 0.935
+- **Improvement:** +0.046 (5.2% relative gain)
+
+### 7.2 Interpretation
+
+**AUC = 0.935** indicates:
+- **Excellent discriminative ability** (0.9-1.0 range is considered outstanding)
+- 93.5% probability that a randomly selected Anormal patient receives a higher risk score than a randomly selected Normal patient
+- The model effectively separates the two classes across all probability thresholds
+
+**Curve characteristics:**
+- Steep initial rise → High true positive rate at low false positive rates
+- Optimized curve dominates baseline throughout → Consistently better trade-offs
+- Both curves far exceed random classifier (diagonal line) → Models capture real patterns
+
+---
+
+## 8. Cross-Validation Results
+
+### 8.1 5-Fold CV Performance
+
+| Fold | F1-Score |
+|------|----------|
+| 1 | 0.8935 |
+| 2 | 0.9069 |
+| 3 | 0.9094 |
+| 4 | 0.9055 |
+| 5 | 0.8937 |
+
+**Mean F1-Score:** 0.9018 ± 0.0068  
+**95% CI:** [0.8884, 0.9151]
+
+### 8.2 Interpretation
+
+- **Low standard deviation (0.68%)** indicates model stability across different data subsets
+- **Narrow confidence interval** suggests reliable generalization
+- **Consistent performance** (all folds 0.89-0.91) shows the model doesn't rely on specific data quirks
+- **Mean CV score (0.9018) ≈ Test score (0.8977)** confirms no significant overfitting
+
+---
+
+
+## 9. Model Strengths & Weaknesses
+
+### 9.1 Strengths
+
+1. **Excellent performance:** 92.93% accuracy, 0.935 AUC
+2. **High interpretability:** 5-level tree with 26 leaves is human-comprehensible
+3. **Clinical validity:** Decision logic aligns with medical knowledge
+4. **Balanced performance:** Both high sensitivity (86.9%) and specificity (96.3%)
+5. **Robust:** Low cross-validation variance indicates stability
+6. **Efficient:** 92% of prediction power from one feature (SOPRO)
+
+### 9.2 Weaknesses
+
+1. **Feature dependency:** Over-reliance on SOPRO—if murmur assessment is poor quality, model fails
+2. **False negatives:** Misses 13% of pathological cases, potentially serious in medical context
+3. **Missing data:** Substantial missing values (up to 24%) required imputation
+4. **Class imbalance:** 64% Normal vs. 36% Anormal—handled with balanced weights but could affect rare pathology detection
+5. **Limited feature diversity:** Most predictive power from one clinical sign; other features underutilized
+
+
+Model generalizes well; overfitting successfully prevented through hyperparameter tuning.

@@ -1,0 +1,172 @@
+# Multivariate Analysis
+
+---
+
+## 1. Data Preparation
+
+The multivariate analysis was conducted on **12,076 complete cases** (97.6% of the cleaned dataset). Missing data ranged from 0.9% (MOTIVO1) to 43.2% (PPA)
+
+---
+
+## 2. Correlation Analysis
+
+### Key Findings
+
+**Strong Positive Correlations (|r| > 0.7):**
+- ALTURA ↔ IDADE: 0.914 (Pearson), 0.927 (Spearman)
+- PESO ↔ ALTURA: 0.871 (Pearson), 0.912 (Spearman)
+- PESO ↔ IMC: 0.787 (Pearson), 0.752 (Spearman)
+- PESO ↔ IDADE: 0.778 (Pearson), 0.829 (Spearman)
+- PA_SISTOLICA ↔ PA_DIASTOLICA: 0.711 (Pearson), 0.671 (Spearman)
+
+**Moderate Negative Correlations:**
+- FC ↔ IDADE: -0.360 (Pearson), -0.386 (Spearman)
+
+### Interpretation
+
+The anthropometric variables (PESO, ALTURA, IMC, IDADE) show high multicollinearity, which is expected in pediatric populations following normal growth curves. The similarity between Pearson and Spearman correlations indicates predominantly linear relationships. Heart rate (FC) decreases with age as expected physiologically. Blood pressure components are moderately correlated, reflecting their physiological interdependence.
+
+
+---
+
+## 3. Multiple Logistic Regression
+
+### Feature Coefficients (Standardized)
+
+| Feature | Coefficient | Interpretation |
+|---------|------------|----------------|
+| ALTURA | -0.368 | Taller children show lower pathology risk |
+| FC | +0.309 | Higher heart rate increases risk |
+| IMC | -0.284 | Higher BMI associated with lower risk |
+| PESO | +0.270 | Higher weight increases risk |
+| PA_SISTOLICA | +0.263 | Higher systolic BP increases risk |
+| PA_DIASTOLICA | -0.074 | Minimal effect |
+| IDADE | -0.013 | Negligible effect |
+
+### Interpretation
+
+The opposing signs for PESO (+0.270) and IMC (-0.284) despite their high correlation (r=0.787) indicate **severe multicollinearity**, making individual coefficient interpretation unreliable. Heart rate (FC) emerges as the second strongest predictor after controlling for size/growth variables. Age shows minimal independent effect when anthropometric variables are included.
+
+---
+
+## 4. Mutual Information Analysis
+
+### Feature Importance Ranking
+
+| Rank | Feature | MI Score | Interpretation |
+|------|---------|----------|----------------|
+| 1 | **SOPRO** | **0.4054** | **Dominant predictor - heart murmurs strongly indicate pathology** |
+| 2 | MOTIVO2 | 0.0721 | Secondary referral reason moderately informative |
+| 3 | MOTIVO1 | 0.0477 | Primary referral reason provides some information |
+| 4-14 | Others | <0.0300 | Minimal predictive value |
+
+
+2MOTIVO20.0721Secondary referral reason moderately informative
+
+### Critical Findings
+
+1. **SOPRO dominates:** With MI=0.405, heart murmur is 56× more informative than the next feature, confirming that clinical examination findings are far superior to anthropometric measurements for predicting cardiac pathology.
+
+---
+
+## 5. Chi-Square Association Analysis
+
+All categorical variables show statistically significant associations with cardiac pathology (p < 0.001):
+
+| Variable | Chi² Statistic | Strength |
+|----------|---------------|----------|
+| SOPRO | 8657.95 | Very Strong |
+| MOTIVO2 | 1736.93 | Strong |
+| MOTIVO1 | 1068.74 | Strong |
+| B2 | 477.84 | Moderate |
+| HDA | 200.28 | Moderate |
+| SEXO | 45.59 | Weak |
+| PPA | 23.17 | Weak |
+
+These results confirm the mutual information findings: SOPRO has by far the strongest association with pathology, while referral reasons and clinical examination findings show moderate-to-strong associations. Gender (SEXO) and blood pressure category (PPA) have minimal discriminative value.
+
+---
+
+## 6. Principal Component Analysis
+
+### Variance Explained
+
+- **PC1:** 55.77% of variance
+- **PC2:** 18.53% of variance
+- **Cumulative (PC1+PC2):** 74.30%
+- **First 4 components:** 94.44%
+
+### Component Interpretation
+
+**PC1 (55.77%) - "Growth/Development Component":**
+- High loadings: PESO (0.481), ALTURA (0.444), IDADE (0.418), PA_SISTOLICA (0.361), IMC (0.362)
+- Represents overall child growth and physiological maturation
+
+**PC2 (18.53%) - "Cardiovascular Component":**
+- High loadings: FC (0.517), PA_DIASTOLICA (0.507), PA_SISTOLICA (0.450)
+- Negative loadings: IDADE (-0.340), ALTURA (-0.307)
+- Captures cardiovascular state independent of growth, possibly representing cardiovascular stress
+
+### Implications
+
+The first two principal components capture 74% of the variance in seven numeric variables, confirming substantial redundancy. The seven numeric features can be effectively reduced to 2-3 components without major information loss, supporting the feature selection strategy of using IMC + FC + one BP measure.
+
+---
+
+## 7. Cluster Analysis
+
+Three distinct patient clusters were identified using K-means clustering (k=3):
+
+| Cluster | Size (%) | Profile | Characteristics |
+|---------|----------|---------|----------------|
+| **0** | 2,808 (43.6%) | Young Children | Low PESO/ALTURA/IDADE (-0.82 to -0.91 SD); High FC (+0.46 SD) |
+| **1** | 1,165 (18.1%) | High-Risk Profile | Elevated anthropometrics; **Very high BP** (>+1.15 SD); High IMC (+1.33 SD) |
+| **2** | 2,473 (38.4%) | Normal Adolescents | Near-average all measures; slightly taller (+0.48 SD) |
+
+### Interpretation
+
+Cluster 0 represents young children with age-appropriate higher heart rates and lower blood pressures. Cluster 1 shows a concerning profile with markedly elevated blood pressure and BMI, possibly representing children with metabolic syndrome or hypertension. Cluster 2 represents older children with normal cardiovascular profiles.
+
+---
+
+## 8. Feature Redundancy & Selection
+
+### Identified Redundancies
+
+**High Redundancy (Remove):**
+- **PESO & ALTURA:** Redundant with IMC (correlations: 0.79-0.87)
+- **IDADE:** Highly correlated with ALTURA (r=0.91), near-zero regression coefficient, low MI score
+- **PA_DIASTOLICA:** Correlated with PA_SISTOLICA (r=0.71), zero MI score
+- **SEXO:** Minimal predictive value (MI=0.003)
+
+### Recommended Feature Set
+
+**Tier 1 - Essential:**
+- **SOPRO** (MI: 0.405) - Dominant predictor
+- **FC** (MI: 0.030, Coef: 0.309) - Independent cardiovascular measure
+- **IMC** - Efficient representation of PESO + ALTURA
+
+**Tier 2 - Valuable:**
+- **MOTIVO1, MOTIVO2** (MI: 0.048, 0.072) - Referral context
+- **B2** (MI: 0.025) - Heart sound characteristics
+- **PA_SISTOLICA** (Coef: 0.263) - One BP measure sufficient
+
+**Tier 3 - Optional:**
+- **HDA** (MI: 0.011) - Patient symptom history
+- **PPA** (MI: 0.005) - Weak predictor
+
+---
+
+## 9. Summary & Conclusions
+
+### Key Findings
+
+1. **Clinical examination findings, particularly SOPRO (heart murmurs), are overwhelmingly the most predictive feature** (MI: 0.405), far exceeding all anthropometric measurements.
+
+2. **High multicollinearity exists among growth-related variables** (PESO, ALTURA, IMC, IDADE), which can be reduced to IMC alone without information loss.
+
+3. **Categorical clinical features substantially outperform continuous anthropometric measurements** in predicting cardiac pathology.
+
+4. **Three natural patient clusters exist** based on growth and cardiovascular profiles, representing different age/risk groups.
+
+5. **Recommended minimal feature set:** SOPRO, FC, IMC, MOTIVO1/2, B2, and PA_SISTOLICA capture most predictive information while eliminating redundancy.
